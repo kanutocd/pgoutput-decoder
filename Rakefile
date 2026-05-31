@@ -5,10 +5,18 @@ require "minitest/test_task"
 require "rubocop/rake_task"
 require "yard"
 
-Minitest::TestTask.create(:test) do |task|
-  task.libs << "test"
-  task.warning = true
-  task.test_globs = ["test/**/*_test.rb"]
+desc "Run tests"
+task :test do
+  test_files = Dir["test/**/*_test.rb"].sort.map { |file| "require_relative #{file.inspect}" }.join("; ")
+
+  sh [
+    RbConfig.ruby,
+    "-r./test/coverage_helper",
+    "-Ilib:test",
+    "-w",
+    "-e",
+    test_files.inspect
+  ].join(" ")
 end
 
 RuboCop::RakeTask.new(:rubocop) do |task|

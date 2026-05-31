@@ -13,6 +13,8 @@ Metrics/ClassLength:
 Metrics/MethodLength:
   Enabled: true
   Max: 20
+  Exclude:
+    - "test/**/*"
 Metrics/AbcSize:
   Enabled: true
   Max: 55

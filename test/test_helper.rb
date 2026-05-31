@@ -1,13 +1,7 @@
 # frozen_string_literal: true
 
-if ENV["COVERAGE"] == "true"
-  require "simplecov"
-  SimpleCov.start do
-    enable_coverage :branch
-    add_filter "/test/"
-  end
-end
+$LOAD_PATH.unshift File.expand_path("../lib", __dir__)
 
 require "minitest/autorun"
-require_relative "../lib/pgoutput_decoder"
+require "pgoutput_decoder"
 require_relative "support/parser_messages"
