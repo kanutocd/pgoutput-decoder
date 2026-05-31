@@ -6,20 +6,17 @@ require_relative "support/builders"
 class RelationCacheTest < Minitest::Test
   include Builders
 
-  def test_stores_and_fetches_relation
+  def test_store_and_fetch_relation
     cache = Pgoutput::Decoder::RelationCache.new
     relation = relation_msg
 
-    cache.store(relation)
-
-    assert_same relation, cache.fetch(42)
+    assert_same relation, cache.store(relation)
+    assert_same relation, cache.fetch(relation.relation_id)
   end
 
-  def test_unknown_relation_raises
+  def test_fetch_unknown_relation_raises
     cache = Pgoutput::Decoder::RelationCache.new
 
-    assert_raises(Pgoutput::Decoder::UnknownRelationError) do
-      cache.fetch(42)
-    end
+    assert_raises(Pgoutput::Decoder::UnknownRelationError) { cache.fetch(404) }
   end
 end

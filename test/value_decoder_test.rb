@@ -15,6 +15,18 @@ class ValueDecoderTest < Minitest::Test
     assert_equal :unchanged_toast, Pgoutput::Decoder::ValueDecoder.new.decode(value)
   end
 
+  def test_decodes_text_using_registry
+    value = Pgoutput::Messages::TupleValue.new(:text, "7", Pgoutput::Decoder::TypeRegistry::INT4)
+
+    assert_equal 7, Pgoutput::Decoder::ValueDecoder.new.decode(value)
+  end
+
+  def test_decodes_binary_using_registry
+    value = Pgoutput::Messages::TupleValue.new(:binary, [7].pack("l>"), Pgoutput::Decoder::TypeRegistry::INT4)
+
+    assert_equal 7, Pgoutput::Decoder::ValueDecoder.new.decode(value)
+  end
+
   def test_rejects_unknown_tuple_format
     value = Pgoutput::Messages::TupleValue.new(:weird, "x", 25)
 
