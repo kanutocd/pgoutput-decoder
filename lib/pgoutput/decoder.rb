@@ -8,6 +8,7 @@ end
 
 require_relative "decoder/version"
 require_relative "decoder/errors"
+require_relative "decoder/events"
 
 module Pgoutput
   # Stateful high-level decoder for pgoutput-parser protocol messages.
