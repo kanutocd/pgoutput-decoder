@@ -1,43 +1,278 @@
-# Pgoutput::Decoder
+# pgoutput-decoder
 
-TODO: Delete this and the text below, and describe your gem
+A high-level PostgreSQL `pgoutput` logical replication value decoder for Ruby.
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/pgoutput/decoder`. To experiment with that code, run `bin/console` for an interactive prompt.
+`pgoutput-decoder` is the companion layer to [`pgoutput-parser`](https://rubygems.org/gems/pgoutput-parser). It accepts immutable protocol messages produced by `pgoutput-parser` and turns tuple payloads into application-friendly Ruby row-change events.
+
+It does **not** parse PostgreSQL wire bytes and it does **not** open replication connections. Those concerns belong to lower-level parser and future client layers.
+
+---
+
+## Requirements
+
+- Ruby 3.4+
+- `pgoutput-parser` `~> 0.1`
+
+---
+
+## Architecture
+
+```text
+pgoutput-parser
+      │
+      ▼
+Protocol messages
+      │
+      ▼
+pgoutput-decoder
+      │
+      ▼
+Decoded row-change events
+```
+
+---
+
+## What This Gem Does
+
+- Decodes PostgreSQL OID-backed tuple values
+- Builds Ruby hashes from relation columns and tuple values
+- Tracks relation metadata from `Relation` messages
+- Tracks active transaction context from `Begin` / `Commit` messages
+- Attaches `transaction_id` to DML events
+- Returns immutable, Ractor-shareable event objects
+- Supports custom OID decoders
+
+---
+
+## What This Gem Does Not Do
+
+This gem intentionally does not:
+
+- Parse PostgreSQL `CopyData` bytes
+- Manage replication slots
+- Open replication connections
+- Maintain WAL acknowledgements
+- Reconnect to PostgreSQL
+- Publish events to queues
+- Integrate with ActiveRecord
+
+---
 
 ## Installation
 
-TODO: Replace `UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG` with your gem name right after releasing it to RubyGems.org. Please do not do it earlier due to security reasons. Alternatively, replace this section with instructions to install your gem from git if you don't plan to release to RubyGems.org.
-
-Install the gem and add to the application's Gemfile by executing:
-
-```bash
-bundle add UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG
+```ruby
+gem "pgoutput-decoder"
 ```
 
-If bundler is not being used to manage dependencies, install the gem by executing:
+Then:
 
 ```bash
-gem install UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG
+bundle install
 ```
 
-## Usage
+Require it with:
 
-TODO: Write usage instructions here
+```ruby
+require "pgoutput/decoder"
+```
 
-## Development
+---
 
-After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
+## Quick Start
 
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and the created tag, and push the `.gem` file to [rubygems.org](https://rubygems.org).
+```ruby
+require "pgoutput"
+require "pgoutput/decoder"
 
-## Contributing
+stream = Pgoutput::RelationTracker.new
+decoder = Pgoutput::Decoder.new
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/pgoutput-decoder. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [code of conduct](https://github.com/[USERNAME]/pgoutput-decoder/blob/main/CODE_OF_CONDUCT.md).
+protocol_message = stream.process(payload)
+event = decoder.decode(protocol_message)
+```
+
+A `Relation` message updates decoder metadata and returns `nil`:
+
+```ruby
+decoder.decode(relation_message)
+# => nil
+```
+
+An insert message returns a decoded event:
+
+```ruby
+event = decoder.decode(insert_message)
+
+event.transaction_id
+# => 789
+
+event.schema
+# => "public"
+
+event.table
+# => "users"
+
+event.values
+# => { "id" => 7, "name" => "Alice", "active" => true }
+```
+
+---
+
+## Transaction Context
+
+PostgreSQL `pgoutput` carries the transaction ID in the `Begin` (`B`) message, not on every row-change message.
+
+The decoder remembers the active transaction and attaches it to decoded DML events:
+
+```ruby
+decoder.decode(begin_message)
+decoder.decode(relation_message)
+insert = decoder.decode(insert_message)
+
+insert.transaction_id
+# => 789
+```
+
+The transaction ID is useful for grouping changes, debugging, and CDC processing. It should not be treated as a globally permanent identifier because PostgreSQL transaction IDs can wrap around.
+
+---
+
+## Supported Events
+
+```ruby
+Pgoutput::Decoder::Events::Begin
+Pgoutput::Decoder::Events::Commit
+Pgoutput::Decoder::Events::Insert
+Pgoutput::Decoder::Events::Update
+Pgoutput::Decoder::Events::Delete
+```
+
+---
+
+## Default Type Support
+
+The default registry supports common scalar PostgreSQL OIDs:
+
+| OID  | Type             |
+| ---- | ---------------- |
+| 16   | boolean          |
+| 20   | bigint           |
+| 21   | smallint         |
+| 23   | integer          |
+| 25   | text             |
+| 114  | json             |
+| 700  | real             |
+| 701  | double precision |
+| 1043 | varchar          |
+| 1082 | date             |
+| 1114 | timestamp        |
+| 1184 | timestamptz      |
+| 1700 | numeric          |
+| 2950 | uuid             |
+| 3802 | jsonb            |
+
+Unsupported OIDs are returned as frozen raw strings.
+
+---
+
+## Binary Values
+
+Binary decoding is intentionally conservative.
+
+The decoder handles safe fixed-width binary scalar types such as:
+
+- boolean
+- int2
+- int4
+- int8
+- float4
+- float8
+
+Unsupported binary values are preserved as frozen raw bytes.
+
+---
+
+## Custom OID Decoders
+
+```ruby
+registry =
+  Pgoutput::Decoder::TypeRegistry.default.with_decoder(999_999) do |raw, format|
+    format == :text ? "custom:#{raw}" : raw
+  end
+
+decoder = Pgoutput::Decoder.new(type_registry: registry)
+```
+
+---
+
+## Update Events
+
+```ruby
+update = decoder.decode(update_message)
+
+update.old_key
+# => { "id" => 7 } or nil
+
+update.old_values
+# => { ... } or nil
+
+update.new_values
+# => { "id" => 7, "name" => "Bob" }
+```
+
+---
+
+## Delete Events
+
+```ruby
+delete = decoder.decode(delete_message)
+
+delete.old_key
+# => { "id" => 7 } or nil
+
+delete.old_values
+# => { ... } or nil
+```
+
+---
+
+## Ractor Safety
+
+Decoded events are deeply shareable:
+
+```ruby
+event = decoder.decode(update_message)
+
+Ractor.shareable?(event)
+# => true
+```
+
+The decoder instance itself is stateful and should not be shared across Ractors.
+
+---
+
+## Testing
+
+```bash
+bundle exec rake test
+```
+
+With coverage:
+
+```bash
+COVERAGE=true bundle exec rake test
+```
+
+---
+
+## Type Checking
+
+```bash
+bundle exec steep check
+```
+
+---
 
 ## License
 
-The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
-
-## Code of Conduct
-
-Everyone interacting in the Pgoutput::Decoder project's codebases, issue trackers, chat rooms and mailing lists is expected to follow the [code of conduct](https://github.com/[USERNAME]/pgoutput-decoder/blob/main/CODE_OF_CONDUCT.md).
+MIT.
