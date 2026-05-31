@@ -1,10 +1,27 @@
 # frozen_string_literal: true
 
+require "bigdecimal"
+require "date"
+require "json"
+require "time"
+
+begin
+  require "pgoutput"
+rescue LoadError
+  # The runtime dependency is provided by the installed gem.
+end
+
 require_relative "decoder/version"
 
 module Pgoutput
-  module Decoder
-    class Error < StandardError; end
-    # Your code goes here...
+  # Stateful high-level decoder for pgoutput-parser protocol messages.
+  #
+  # Decoder accepts immutable protocol messages from pgoutput-parser and returns
+  # immutable, Ractor-shareable row-change events. The decoder maintains relation
+  # and active transaction context, so one instance should be used per logical
+  # replication stream.
+  #
+  # @api public
+  class Decoder
   end
 end
