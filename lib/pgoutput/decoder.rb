@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
-begin
-  require "pgoutput"
-rescue LoadError
-  # The runtime dependency is provided by the installed gem.
-end
+require "bigdecimal"
+require "date"
+require "json"
+require "time"
+require "pgoutput"
 
 require_relative "decoder/version"
 require_relative "decoder/errors"
