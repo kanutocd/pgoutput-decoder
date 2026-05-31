@@ -9,6 +9,7 @@ end
 require_relative "decoder/version"
 require_relative "decoder/errors"
 require_relative "decoder/events"
+require_relative "decoder/type_registry"
 
 module Pgoutput
   # Stateful high-level decoder for pgoutput-parser protocol messages.
@@ -20,5 +21,13 @@ module Pgoutput
   #
   # @api public
   class Decoder
+    # @return [TypeRegistry]
+    attr_reader :type_registry
+
+    # @param type_registry [TypeRegistry] immutable OID decoder registry.
+    # @return [void]
+    def initialize(type_registry: TypeRegistry.default)
+      @type_registry = type_registry
+    end
   end
 end
