@@ -4,32 +4,70 @@ module Pgoutput
   class Decoder
     # Immutable PostgreSQL OID-to-decoder registry.
     #
-    # The registry maps OIDs to callable decoders. It is intentionally separate
-    # from pgoutput-parser so the parser remains a pure protocol layer.
+    # The registry maps PostgreSQL type OIDs to callable decoders. It is
+    # intentionally separate from pgoutput-parser so the parser remains a pure
+    # protocol layer and the decoder owns value conversion policy.
+    #
+    # Registry instances are immutable after construction. Decoded values are
+    # passed through Ractor.make_shareable so caller-visible values can cross
+    # Ractor boundaries safely when Ruby supports the value shape.
     #
     # @api public
     class TypeRegistry
+      # PostgreSQL bool OID.
       BOOL = 16
+
+      # PostgreSQL int8 / bigint OID.
       INT8 = 20
+
+      # PostgreSQL int2 / smallint OID.
       INT2 = 21
+
+      # PostgreSQL int4 / integer OID.
       INT4 = 23
+
+      # PostgreSQL text OID.
       TEXT = 25
+
+      # PostgreSQL json OID.
       JSON = 114
+
+      # PostgreSQL float4 / real OID.
       FLOAT4 = 700
+
+      # PostgreSQL float8 / double precision OID.
       FLOAT8 = 701
+
+      # PostgreSQL varchar OID.
       VARCHAR = 1043
+
+      # PostgreSQL date OID.
       DATE = 1082
+
+      # PostgreSQL timestamp without time zone OID.
       TIMESTAMP = 1114
+
+      # PostgreSQL timestamp with time zone OID.
       TIMESTAMPTZ = 1184
+
+      # PostgreSQL numeric OID.
       NUMERIC = 1700
+
+      # PostgreSQL uuid OID.
       UUID = 2950
+
+      # PostgreSQL jsonb OID.
       JSONB = 3802
 
+      # Return the process-local default immutable registry.
+      #
       # @return [TypeRegistry] default immutable registry.
       def self.default
         @default ||= new(default_decoders)
       end
 
+      # Build the default OID decoder table.
+      #
       # @return [Hash<Integer, Proc>] default decoder table.
       def self.default_decoders
         {
@@ -51,6 +89,8 @@ module Pgoutput
         }.freeze
       end
 
+      # Create an immutable registry.
+      #
       # @param decoders [Hash<Integer, Proc>] decoder table.
       # @return [void]
       def initialize(decoders = self.class.default_decoders)
@@ -79,6 +119,7 @@ module Pgoutput
       # @yieldparam format [Symbol] tuple value format.
       # @yieldreturn [Object]
       # @return [TypeRegistry]
+      # @raise [ArgumentError] if no block is provided.
       def with_decoder(oid, &block)
         raise ArgumentError, "block required" unless block
 
