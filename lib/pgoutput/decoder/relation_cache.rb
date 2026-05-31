@@ -8,7 +8,7 @@ module Pgoutput
     class RelationCache
       # @return [void]
       def initialize
-        @relations = {} #: Hash[Integer, untyped]
+        @relations = {} # : Hash[Integer, untyped]
       end
 
       # Store a relation message.

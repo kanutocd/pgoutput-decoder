@@ -30,8 +30,8 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency "pgoutput-parser", "~> 0.1"
 
-  spec.add_development_dependency "pry", "~> 0.16.0"
   spec.add_development_dependency "minitest", "~> 5.27"
+  spec.add_development_dependency "pry", "~> 0.16.0"
   spec.add_development_dependency "rake", "~> 13.4"
   spec.add_development_dependency "rubocop", "~> 1.87"
   spec.add_development_dependency "simplecov", "~> 0.22.0"

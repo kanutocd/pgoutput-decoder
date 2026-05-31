@@ -9,5 +9,5 @@ if ENV["COVERAGE"] == "true"
 end
 
 require "minitest/autorun"
-require_relative "../lib/pgoutput-decoder"
+require_relative "../lib/pgoutput_decoder"
 require_relative "support/parser_messages"
