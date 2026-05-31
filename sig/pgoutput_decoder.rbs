@@ -1,0 +1,119 @@
+module Pgoutput
+  class Decoder
+    VERSION: String
+
+    type event =
+      Events::Begin |
+      Events::Commit |
+      Events::Insert |
+      Events::Update |
+      Events::Delete
+
+    def initialize: (?type_registry: TypeRegistry) -> void
+    def decode: (untyped message) -> event?
+    def type_registry: () -> TypeRegistry
+
+    class Error < StandardError
+    end
+
+    class UnknownRelationError < Error
+    end
+
+    class UnsupportedMessageError < Error
+    end
+
+    class ValueDecodeError < Error
+    end
+
+    class TransactionStateError < Error
+    end
+
+    module Events
+      class Begin < Data
+        attr_reader transaction_id: Integer
+        attr_reader final_lsn: Integer
+        attr_reader commit_timestamp: Integer
+        def self.new: (Integer transaction_id, Integer final_lsn, Integer commit_timestamp) -> Begin
+      end
+
+      class Commit < Data
+        attr_reader transaction_id: Integer?
+        attr_reader flags: Integer
+        attr_reader commit_lsn: Integer
+        attr_reader transaction_end_lsn: Integer
+        attr_reader commit_timestamp: Integer
+        def self.new: (Integer? transaction_id, Integer flags, Integer commit_lsn, Integer transaction_end_lsn, Integer commit_timestamp) -> Commit
+      end
+
+      class Insert < Data
+        attr_reader transaction_id: Integer
+        attr_reader relation_id: Integer
+        attr_reader schema: String
+        attr_reader table: String
+        attr_reader values: Hash[String, untyped]
+        def self.new: (Integer transaction_id, Integer relation_id, String schema, String table, Hash[String, untyped] values) -> Insert
+      end
+
+      class Update < Data
+        attr_reader transaction_id: Integer
+        attr_reader relation_id: Integer
+        attr_reader schema: String
+        attr_reader table: String
+        attr_reader old_key: Hash[String, untyped]?
+        attr_reader old_values: Hash[String, untyped]?
+        attr_reader new_values: Hash[String, untyped]
+        def self.new: (Integer transaction_id, Integer relation_id, String schema, String table, Hash[String, untyped]? old_key, Hash[String, untyped]? old_values, Hash[String, untyped] new_values) -> Update
+      end
+
+      class Delete < Data
+        attr_reader transaction_id: Integer
+        attr_reader relation_id: Integer
+        attr_reader schema: String
+        attr_reader table: String
+        attr_reader old_key: Hash[String, untyped]?
+        attr_reader old_values: Hash[String, untyped]?
+        def self.new: (Integer transaction_id, Integer relation_id, String schema, String table, Hash[String, untyped]? old_key, Hash[String, untyped]? old_values) -> Delete
+      end
+    end
+
+    class TypeRegistry
+      BOOL: Integer
+      INT8: Integer
+      INT2: Integer
+      INT4: Integer
+      TEXT: Integer
+      JSON: Integer
+      FLOAT4: Integer
+      FLOAT8: Integer
+      VARCHAR: Integer
+      DATE: Integer
+      TIMESTAMP: Integer
+      TIMESTAMPTZ: Integer
+      NUMERIC: Integer
+      UUID: Integer
+      JSONB: Integer
+
+      def self.default: () -> TypeRegistry
+      def self.default_decoders: () -> Hash[Integer, Proc]
+      def initialize: (?Hash[Integer, Proc] decoders) -> void
+      def decode: (Integer? oid, String? raw, Symbol format) -> untyped?
+      def with_decoder: (Integer oid) { (String raw, Symbol format) -> untyped } -> TypeRegistry
+    end
+
+    class ValueDecoder
+      def initialize: (?type_registry: TypeRegistry) -> void
+      def decode: (untyped tuple_value) -> untyped?
+    end
+
+    class RelationCache
+      def initialize: () -> void
+      def store: (untyped relation) -> untyped
+      def fetch: (Integer relation_id) -> untyped
+    end
+
+    class RowBuilder
+      def initialize: (?type_registry: TypeRegistry) -> void
+      def build: (untyped relation, Array[untyped] tuple) -> Hash[String, untyped]
+    end
+  end
+end
