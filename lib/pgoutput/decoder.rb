@@ -1,10 +1,5 @@
 # frozen_string_literal: true
 
-require "bigdecimal"
-require "date"
-require "json"
-require "time"
-
 begin
   require "pgoutput"
 rescue LoadError
@@ -12,6 +7,7 @@ rescue LoadError
 end
 
 require_relative "decoder/version"
+require_relative "decoder/errors"
 
 module Pgoutput
   # Stateful high-level decoder for pgoutput-parser protocol messages.
