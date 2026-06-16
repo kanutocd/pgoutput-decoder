@@ -2,8 +2,6 @@
 
 ## [Unreleased]
 
----
-
 ## 0.1.1 - 2026-06-17
 
 ### Fixed
@@ -29,8 +27,6 @@
 * No protocol decoding changes.
 * No public API changes.
 * This release focuses on RBS, Steep, and developer tooling correctness.
-
----
 
 ## [0.1.0] - 2026-06-01
 

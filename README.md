@@ -1,5 +1,10 @@
 # pgoutput-decoder
 
+[![Gem Version](https://badge.fury.io/rb/pgoutput-decoder.svg)](https://badge.fury.io/rb/pgoutput-decoder)
+[![CI](https://github.com/kanutocd/pgoutput-decoder/workflows/CI/badge.svg)](https://github.com/kanutocd/pgoutput-decoder/actions)
+[![Ruby Version](https://img.shields.io/badge/ruby-%3E%3D%203.4-ruby.svg)](https://www.ruby-lang.org/en/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 A high-level PostgreSQL `pgoutput` logical replication value decoder for Ruby.
 
 `pgoutput-decoder` is the companion layer to [`pgoutput-parser`](https://rubygems.org/gems/pgoutput-parser). It accepts immutable protocol messages produced by `pgoutput-parser` and turns tuple payloads into application-friendly Ruby row-change events.
@@ -275,4 +280,4 @@ bundle exec steep check
 
 ## License
 
-MIT.
+[MIT](LICENSE.txt).
