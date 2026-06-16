@@ -1,15 +1,34 @@
 # Changelog
 
-All notable changes to this project will be documented in this file.
-
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-
 ## [Unreleased]
 
-### Added
+---
 
-- Placeholder for future development.
+## 0.1.1 - 2026-06-17
+
+### Fixed
+
+* Curated RBS signatures shipped with the gem.
+* Fixed duplicate `Pgoutput::Decoder` type declarations that caused Steep/RBS environment loading failures.
+* Corrected decoder type signatures to align with actual runtime behavior.
+* Improved `TypeRegistry` type annotations and value narrowing.
+* Fixed Steep type-checking issues around decoder lookup, JSON decoding, UUID decoding, and numeric value decoding.
+* Added missing standard library type dependencies required by Steep.
+* Improved compatibility with downstream consumers using:
+
+  * `library "pgoutput-decoder"`
+  * `bundle exec steep check`
+
+### Documentation
+
+* Refined shipped type definitions to better reflect the public API surface.
+
+### Internal
+
+* No runtime behavior changes.
+* No protocol decoding changes.
+* No public API changes.
+* This release focuses on RBS, Steep, and developer tooling correctness.
 
 ---
 
@@ -32,8 +51,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added RBS signatures.
 - Added README documentation.
 - Added CI and release workflow templates.
-
----
-
-[Unreleased]: https://github.com/kanutocd/pgoutput-decoder/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/kanutocd/pgoutput-decoder/releases/tag/v0.1.0

@@ -19,7 +19,7 @@ module Pgoutput
       # @param tuple [Array<Pgoutput::Messages::TupleValue>]
       # @return [Hash<String, Object>]
       def build(relation, tuple)
-        row = {}
+        row = {} # : Hash[String, untyped]
 
         tuple.each_with_index do |tuple_value, index|
           column = relation.columns[index]

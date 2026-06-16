@@ -2,6 +2,9 @@ module Pgoutput
   class Decoder
     VERSION: String
 
+    type parser_message = untyped
+    type relation = untyped
+    type tuple = Array[untyped]
     type event =
       Events::Begin |
       Events::Commit |
@@ -9,9 +12,30 @@ module Pgoutput
       Events::Update |
       Events::Delete
 
+    @type_registry: TypeRegistry
+    @relations: RelationCache
+    @row_builder: RowBuilder
+    @current_transaction_id: Integer?
+    @current_final_lsn: Integer?
+    @current_commit_timestamp: Integer?
+
     def initialize: (?type_registry: TypeRegistry) -> void
-    def decode: (untyped message) -> event?
+    def decode: (parser_message message) -> event?
     def type_registry: () -> TypeRegistry
+
+    private
+
+    def decode_begin: (parser_message message) -> Events::Begin
+    def decode_commit: (parser_message message) -> Events::Commit
+    def decode_insert: (parser_message message) -> Events::Insert
+    def decode_update: (parser_message message) -> Events::Update
+    def decode_delete: (parser_message message) -> Events::Delete
+    def optional_row: (relation relation, tuple? tuple) -> Hash[String, untyped]?
+    def relation_for: (Integer relation_id) -> relation
+    def require_transaction_id: () -> Integer
+    def clear_transaction!: () -> nil
+    def parser_messages: () -> untyped
+    def share: [T] (T object) -> T
 
     class Error < StandardError
     end
@@ -93,27 +117,49 @@ module Pgoutput
       UUID: Integer
       JSONB: Integer
 
+      type decoder = ^(String raw, Symbol format) -> untyped
+
+      @decoders: Hash[Integer, decoder]
+
       def self.default: () -> TypeRegistry
-      def self.default_decoders: () -> Hash[Integer, Proc]
-      def initialize: (?Hash[Integer, Proc] decoders) -> void
+      def self.default_decoders: () -> Hash[Integer, decoder]
+      def initialize: (?Hash[Integer, decoder] decoders) -> void
       def decode: (Integer? oid, String? raw, Symbol format) -> untyped?
       def with_decoder: (Integer oid) { (String raw, Symbol format) -> untyped } -> TypeRegistry
+
+      private
+
+      def self.decode_bool: (String raw, Symbol format) -> bool
+      def self.decode_int: (String raw, Symbol format, Integer expected_length, String template) -> (Integer | String)
+      def self.decode_float: (String raw, Symbol format, Integer expected_length, String template) -> (Float | String)
+      def self.decode_jsonb: (String raw, Symbol format) -> untyped
+      def self.decode_uuid_binary: (String raw) -> String
     end
 
     class ValueDecoder
+      @type_registry: TypeRegistry
+
       def initialize: (?type_registry: TypeRegistry) -> void
       def decode: (untyped tuple_value) -> untyped?
     end
 
     class RelationCache
+      @relations: Hash[Integer, relation]
+
       def initialize: () -> void
-      def store: (untyped relation) -> untyped
-      def fetch: (Integer relation_id) -> untyped
+      def store: (relation relation) -> relation
+      def fetch: (Integer relation_id) -> relation
     end
 
     class RowBuilder
+      @value_decoder: ValueDecoder
+
       def initialize: (?type_registry: TypeRegistry) -> void
-      def build: (untyped relation, Array[untyped] tuple) -> Hash[String, untyped]
+      def build: (relation relation, tuple tuple) -> Hash[String, untyped]
+
+      private
+
+      def normalize_oid: (untyped tuple_value, Integer oid) -> untyped
     end
   end
 end

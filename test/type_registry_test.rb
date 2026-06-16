@@ -17,8 +17,8 @@ class TypeRegistryTest < Minitest::Test
   end
 
   def test_decodes_common_text_values
-    assert_equal true, @registry.decode(Pgoutput::Decoder::TypeRegistry::BOOL, "t", :text)
-    assert_equal false, @registry.decode(Pgoutput::Decoder::TypeRegistry::BOOL, "f", :text)
+    assert @registry.decode(Pgoutput::Decoder::TypeRegistry::BOOL, "t", :text)
+    refute @registry.decode(Pgoutput::Decoder::TypeRegistry::BOOL, "f", :text)
     assert_equal 2, @registry.decode(Pgoutput::Decoder::TypeRegistry::INT2, "2", :text)
     assert_equal 7, @registry.decode(Pgoutput::Decoder::TypeRegistry::INT4, "7", :text)
     assert_equal 9_000_000_000, @registry.decode(Pgoutput::Decoder::TypeRegistry::INT8, "9000000000", :text)
@@ -38,8 +38,8 @@ class TypeRegistryTest < Minitest::Test
   end
 
   def test_decodes_binary_values_when_supported
-    assert_equal true, @registry.decode(Pgoutput::Decoder::TypeRegistry::BOOL, [1].pack("C"), :binary)
-    assert_equal false, @registry.decode(Pgoutput::Decoder::TypeRegistry::BOOL, [0].pack("C"), :binary)
+    assert @registry.decode(Pgoutput::Decoder::TypeRegistry::BOOL, [1].pack("C"), :binary)
+    refute @registry.decode(Pgoutput::Decoder::TypeRegistry::BOOL, [0].pack("C"), :binary)
     assert_equal 2, @registry.decode(Pgoutput::Decoder::TypeRegistry::INT2, [2].pack("s>"), :binary)
     assert_equal 7, @registry.decode(Pgoutput::Decoder::TypeRegistry::INT4, [7].pack("l>"), :binary)
     assert_equal 9_000_000_000,

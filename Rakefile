@@ -3,20 +3,14 @@
 require "bundler/gem_tasks"
 require "minitest/test_task"
 require "rubocop/rake_task"
+require "rake/testtask"
 require "yard"
 
-desc "Run tests"
-task :test do
-  test_files = Dir["test/**/*_test.rb"].sort.map { |file| "require_relative #{file.inspect}" }.join("; ")
-
-  sh [
-    RbConfig.ruby,
-    "-r./test/coverage_helper",
-    "-Ilib:test",
-    "-w",
-    "-e",
-    test_files.inspect
-  ].join(" ")
+Rake::TestTask.new(:test) do |t|
+  t.libs << "test"
+  t.libs << "lib"
+  t.warning = false
+  t.test_files = FileList["test/**/*_test.rb"]
 end
 
 RuboCop::RakeTask.new(:rubocop) do |task|
@@ -28,4 +22,32 @@ YARD::Rake::YardocTask.new(:yard) do |task|
   task.options = ["--protected", "--markup", "markdown", "--readme", "docs/index.md"]
 end
 
-task default: %i[test rubocop yard]
+YARD::Rake::YardocTask.new(:yard)
+
+namespace :yard do
+  desc "Validate YARD documentation coverage"
+  task :validate do
+    require "open3"
+
+    stdout, stderr, status = Open3.capture3("bundle", "exec", "yard", "stats")
+    text = "#{stdout}\n#{stderr}"
+    puts text
+    abort("yard stats failed") unless status.success?
+
+    match = text.match(/([0-9]+(?:\.[0-9]+)?)%\s+documented/)
+    abort("Unable to determine YARD coverage") unless match
+
+    coverage = match[1].to_f
+    minimum = 95.0
+    abort(format("YARD coverage %<coverage> is below %<minimum>", { coverage:, minimum: })) if coverage < minimum
+
+    puts format("YARD coverage %.2f%%", coverage)
+  end
+end
+
+desc "Validate curated RBS signatures"
+task :steep_check do
+  sh "bundle exec steep check"
+end
+
+task default: %i[test rubocop steep_check yard yard:validate]

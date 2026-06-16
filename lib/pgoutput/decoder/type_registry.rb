@@ -79,7 +79,7 @@ module Pgoutput
           VARCHAR => ->(raw, _format) { raw.dup.freeze },
           FLOAT4 => ->(raw, format) { decode_float(raw, format, 4, "g") },
           FLOAT8 => ->(raw, format) { decode_float(raw, format, 8, "G") },
-          NUMERIC => ->(raw, format) { format == :text ? BigDecimal(raw) : raw.dup.freeze },
+          NUMERIC => ->(raw, format) { format == :text ? Kernel.BigDecimal(raw) : raw.dup.freeze },
           JSON => ->(raw, format) { format == :text ? ::JSON.parse(raw) : raw.dup.freeze },
           JSONB => ->(raw, format) { decode_jsonb(raw, format) },
           UUID => ->(raw, format) { format == :text ? raw.dup.freeze : decode_uuid_binary(raw) },
@@ -107,7 +107,7 @@ module Pgoutput
       def decode(oid, raw, format)
         return nil if raw.nil?
 
-        decoder = @decoders[oid]
+        decoder = oid ? @decoders[oid] : nil
         decoded = decoder ? decoder.call(raw, format) : raw.dup.freeze
         Ractor.make_shareable(decoded)
       end
@@ -139,14 +139,14 @@ module Pgoutput
           return raw.to_i if format == :text
           return raw.dup.freeze unless raw.bytesize == expected_length
 
-          raw.unpack1(template)
+          Integer(raw.unpack1(template))
         end
 
         def decode_float(raw, format, expected_length, template)
           return Float(raw) if format == :text
           return raw.dup.freeze unless raw.bytesize == expected_length
 
-          raw.unpack1(template)
+          Float(raw.unpack1(template))
         end
 
         def decode_jsonb(raw, format)
@@ -156,13 +156,13 @@ module Pgoutput
           # current on-wire format; the remaining bytes contain JSON text.
           return raw.dup.freeze unless raw.bytesize >= 2 && raw.getbyte(0) == 1
 
-          ::JSON.parse(raw.byteslice(1..))
+          ::JSON.parse(raw.byteslice(1..).to_s)
         end
 
         def decode_uuid_binary(raw)
           return raw.dup.freeze unless raw.bytesize == 16
 
-          hex = raw.unpack1("H*")
+          hex = raw.unpack1("H*").to_s
           "#{hex[0, 8]}-#{hex[8, 4]}-#{hex[12, 4]}-#{hex[16, 4]}-#{hex[20, 12]}".freeze
         end
       end
