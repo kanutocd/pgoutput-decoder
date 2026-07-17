@@ -39,7 +39,11 @@ module Builders
   def update_msg
     Pgoutput::Messages::Update.new(
       42,
-      [Pgoutput::Messages::TupleValue.new(:text, "7", 23)].freeze,
+      [
+        Pgoutput::Messages::TupleValue.new(:text, "7", 23),
+        Pgoutput::Messages::TupleValue.new(:null, nil, nil),
+        Pgoutput::Messages::TupleValue.new(:null, nil, nil)
+      ].freeze,
       nil,
       [
         Pgoutput::Messages::TupleValue.new(:text, "7", 23),
@@ -52,7 +56,11 @@ module Builders
   def delete_msg
     Pgoutput::Messages::Delete.new(
       42,
-      [Pgoutput::Messages::TupleValue.new(:text, "7", 23)].freeze,
+      [
+        Pgoutput::Messages::TupleValue.new(:text, "7", 23),
+        Pgoutput::Messages::TupleValue.new(:null, nil, nil),
+        Pgoutput::Messages::TupleValue.new(:null, nil, nil)
+      ].freeze,
       nil
     )
   end

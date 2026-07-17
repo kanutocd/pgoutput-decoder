@@ -129,11 +129,14 @@ module Pgoutput
       class << self
         private
 
+        # This decodes a PostgreSQL boolean value; it is not an object predicate.
+        # rubocop:disable Naming/PredicateMethod
         def decode_bool(raw, format)
           return raw == "t" if format == :text
 
           raw.unpack1("C") == 1
         end
+        # rubocop:enable Naming/PredicateMethod
 
         def decode_int(raw, format, expected_length, template)
           return raw.to_i if format == :text

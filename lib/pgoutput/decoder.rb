@@ -120,7 +120,7 @@ module Pgoutput
           message.relation_id,
           relation.schema,
           relation.table,
-          optional_row(relation, message.old_key_tuple),
+          optional_row(relation, message.old_key_tuple, key: true),
           optional_row(relation, message.old_tuple),
           @row_builder.build(relation, message.new_tuple)
         )
@@ -137,14 +137,15 @@ module Pgoutput
           message.relation_id,
           relation.schema,
           relation.table,
-          optional_row(relation, message.old_key_tuple),
+          optional_row(relation, message.old_key_tuple, key: true),
           optional_row(relation, message.old_tuple)
         )
       )
     end
 
-    def optional_row(relation, tuple)
+    def optional_row(relation, tuple, key: false)
       return nil if tuple.nil?
+      return @row_builder.build_key(relation, tuple) if key
 
       @row_builder.build(relation, tuple)
     end

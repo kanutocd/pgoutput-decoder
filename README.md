@@ -239,6 +239,11 @@ delete.old_values
 # => { ... } or nil
 ```
 
+`old_key` contains only columns marked as replica-key columns by the preceding
+`Relation` message. Composite and non-`id` identities retain their declared
+column order; full-width tuples with non-key placeholders do not leak those
+placeholders into the decoded key.
+
 ---
 
 ## Ractor Safety
@@ -262,10 +267,11 @@ The decoder instance itself is stateful and should not be shared across Ractors.
 bundle exec rake test
 ```
 
-With coverage:
+The test task generates line and branch coverage in `coverage/` and enforces
+the configured minimums:
 
 ```bash
-COVERAGE=true bundle exec rake test
+bundle exec rake test
 ```
 
 ---

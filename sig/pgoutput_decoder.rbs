@@ -30,7 +30,7 @@ module Pgoutput
     def decode_insert: (parser_message message) -> Events::Insert
     def decode_update: (parser_message message) -> Events::Update
     def decode_delete: (parser_message message) -> Events::Delete
-    def optional_row: (relation relation, tuple? tuple) -> Hash[String, untyped]?
+    def optional_row: (relation relation, tuple? tuple, ?key: bool) -> Hash[String, untyped]?
     def relation_for: (Integer relation_id) -> relation
     def require_transaction_id: () -> Integer
     def clear_transaction!: () -> nil
@@ -156,9 +156,12 @@ module Pgoutput
 
       def initialize: (?type_registry: TypeRegistry) -> void
       def build: (relation relation, tuple tuple) -> Hash[String, untyped]
+      def build_key: (relation relation, tuple tuple) -> Hash[String, untyped]
 
       private
 
+      def build_columns: (Array[untyped] columns, tuple tuple, ?key_only: bool) -> Hash[String, untyped]
+      def key_column?: (untyped column) -> bool
       def normalize_oid: (untyped tuple_value, Integer oid) -> untyped
     end
   end

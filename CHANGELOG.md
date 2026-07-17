@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+### Fixed
+
+* Decode UPDATE and DELETE old-key tuples using relation key-column flags.
+* Preserve composite and non-`id` keys while omitting non-key placeholders from
+  full-width PostgreSQL tuples.
+* Restored SimpleCov result finalization, HTML report generation, and minimum
+  line/branch coverage enforcement.
+
+### Documentation
+
+* Documented exact replica-key tuple behavior.
+
 ## 0.1.1 - 2026-06-17
 
 ### Fixed

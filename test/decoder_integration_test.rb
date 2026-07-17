@@ -10,26 +10,26 @@ class DecoderIntegrationTest < Minitest::Test
     decoder = Pgoutput::Decoder.new
 
     begin_event = decoder.decode(begin_msg)
-    assert_nil decoder.decode(relation_msg)
+    relation_event = decoder.decode(relation_msg)
     insert_event = decoder.decode(insert_msg)
     update_event = decoder.decode(update_msg)
     delete_event = decoder.decode(delete_msg)
     commit_event = decoder.decode(commit_msg)
+    events = [begin_event, insert_event, update_event, delete_event, commit_event]
 
-    assert_equal 789, begin_event.transaction_id
-    assert_equal 789, insert_event.transaction_id
-    assert_equal 789, update_event.transaction_id
-    assert_equal 789, delete_event.transaction_id
-    assert_equal 789, commit_event.transaction_id
-
-    assert_equal({ "id" => 7, "name" => "Alice", "active" => true }, insert_event.values)
-    assert_equal({ "id" => 7 }, update_event.old_key)
-    assert_equal({ "id" => 7, "name" => "Bob", "active" => true }, update_event.new_values)
-    assert_equal({ "id" => 7 }, delete_event.old_key)
-
-    [begin_event, insert_event, update_event, delete_event, commit_event].each do |event|
-      assert Ractor.shareable?(event)
-    end
+    assert_nil relation_event
+    assert_equal [789, 789, 789, 789, 789], events.map(&:transaction_id)
+    assert_equal(
+      [
+        { "id" => 7, "name" => "Alice", "active" => true },
+        { "id" => 7 },
+        { "id" => 7, "name" => "Bob", "active" => true },
+        { "id" => 7 },
+        true
+      ],
+      [insert_event.values, update_event.old_key, update_event.new_values, delete_event.old_key,
+       events.all? { |event| Ractor.shareable?(event) }]
+    )
   end
 
   def test_dml_before_begin_raises

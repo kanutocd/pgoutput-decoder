@@ -34,4 +34,46 @@ class RowBuilderTest < Minitest::Test
     assert_equal %w[id name active], row.keys
     refute_includes row.keys, "ignored"
   end
+
+  def test_builds_composite_key_from_full_width_tuple_and_omits_non_key_placeholders
+    relation = composite_relation
+    tuple = [
+      Pgoutput::Messages::TupleValue.new(:text, "9", nil),
+      Pgoutput::Messages::TupleValue.new(:null, nil, nil),
+      Pgoutput::Messages::TupleValue.new(:text, "member-1", nil)
+    ].freeze
+
+    key = Pgoutput::Decoder::RowBuilder.new.build_key(relation, tuple)
+
+    assert_equal({ "tenant_id" => 9, "member_uuid" => "member-1" }, key)
+    assert Ractor.shareable?(key)
+  end
+
+  def test_builds_compact_key_tuple_in_relation_key_order
+    relation = composite_relation
+    tuple = [
+      Pgoutput::Messages::TupleValue.new(:text, "9", nil),
+      Pgoutput::Messages::TupleValue.new(:text, "member-1", nil)
+    ].freeze
+
+    key = Pgoutput::Decoder::RowBuilder.new.build_key(relation, tuple)
+
+    assert_equal({ "tenant_id" => 9, "member_uuid" => "member-1" }, key)
+  end
+
+  private
+
+  def composite_relation
+    Pgoutput::Messages::Relation.new(
+      77,
+      "public",
+      "memberships",
+      100,
+      [
+        Pgoutput::Messages::Column.new(1, "tenant_id", Pgoutput::Decoder::TypeRegistry::INT8, -1),
+        Pgoutput::Messages::Column.new(0, "status", Pgoutput::Decoder::TypeRegistry::TEXT, -1),
+        Pgoutput::Messages::Column.new(1, "member_uuid", Pgoutput::Decoder::TypeRegistry::TEXT, -1)
+      ].freeze
+    )
+  end
 end

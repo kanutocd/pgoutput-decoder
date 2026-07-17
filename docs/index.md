@@ -213,6 +213,10 @@ decoder.decode(
 
 # Integration Example
 
+Update and delete `old_key` hashes contain only the columns flagged as
+replica-key columns by relation metadata. Composite and non-`id` keys are
+preserved without non-key placeholders.
+
 Using `pgoutput-parser` and `pgoutput-decoder` together:
 
 ```text
@@ -330,8 +334,11 @@ bundle exec rake test
 Run coverage:
 
 ```bash
-COVERAGE=true bundle exec rake test
+bundle exec rake test
 ```
+
+The test task writes the line and branch report to `coverage/` and enforces the
+configured minimums.
 
 Run Steep:
 
@@ -344,4 +351,3 @@ bundle exec steep check
 # License
 
 MIT
-
