@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## 0.2.0 - 2026-07-17
+
 ### Fixed
 
 * Decode UPDATE and DELETE old-key tuples using relation key-column flags.
